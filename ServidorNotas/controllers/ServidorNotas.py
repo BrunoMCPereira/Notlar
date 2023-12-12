@@ -4,6 +4,8 @@ import threading
 import tkinter as tk
 import ttkbootstrap as ttk
 import json
+from models.criptografia import Criptografia as c
+
 
 SERVER = socket.gethostbyname(socket.gethostname())
 PORTA = 5050
@@ -118,14 +120,20 @@ class ServidorNotas(tk.Tk):
                     self.log("\nSERVIÇO REQUERIDO\n")
                    # Estrutura a alterar por funções
                     if self.dados['instrução'] == 'Criar_Nota':
-                        self.criar_nota(self.dados['nome'], self.dados['username'], self.dados['password'])
-                        conexao.sendall(self.mostrar_notas(self.dados['username']))
+                        resposta = self.criar_nota(self.dados['nome'], self.dados['username'], self.dados['password'])
+                        resposta_encriptada = c.encriptar_cliente(resposta)
+                        resposta_cliente = resposta_encriptada.encode()
+                        conexao.sendall(resposta_cliente)
                     elif self.dados['instrução'] == 'Alterar_Nota':
-                        self.guardar_nota(self.dados['username'], self.dados['password'])
-                        conexao.sendall(self.mostrar_notas(dados['username']))
+                        resposta = self.guardar_nota(self.dados['username'], self.dados['password'])
+                        resposta_encriptada = c.encriptar_cliente(resposta)
+                        resposta_cliente = resposta_encriptada.encode()
+                        conexao.sendall(resposta_cliente)
                     elif self.dados['instrução'] == 'Eliminar_Nota':
-                        self.eliminar_nota(self.dados['username'])
-                        conexao.sendall(self.mostrar_notas(self.dados['username']))
+                        resposta = self.eliminar_nota(self.dados['username'])
+                        resposta_encriptada = c.encriptar_cliente(resposta)
+                        resposta_cliente = resposta_encriptada.encode()
+                        conexao.sendall(resposta_cliente)
                     elif self.dados['instrução'] == 'Mostrar_Notas':
                         conexao.sendall(self.mostrar_notas(self.dados['username']))
 
