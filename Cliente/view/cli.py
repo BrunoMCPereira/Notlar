@@ -10,7 +10,7 @@ from controllers.controller import Conexao as c
 
 utilizador_ativo = None
 
-PATH = Path("C:\\Users\\Asus\\OneDrive - UAL - Universidade Autonoma de Lisboa\\3º Ano\\1º Semestre\\Sistemas de Distribuição Partilhados\\Projeto\\Notlar")
+PATH = Path(__file__)
 
 class Notlar(tk.Tk):
     def __init__(self, title, size):
