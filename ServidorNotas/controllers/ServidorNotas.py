@@ -3,6 +3,7 @@ import mysql.connector
 import threading
 import tkinter as tk
 import ttkbootstrap as ttk
+import json
 
 SERVER = socket.gethostbyname(socket.gethostname())
 PORTA = 5050
@@ -69,6 +70,15 @@ class ServidorNotas(tk.Tk):
             
 
         self.inicializar_servidor()
+        
+        self.dados = {
+
+            'username': None,
+            'username_id': None,
+            'nota': None,
+            'nova nota': None,
+            'instrucao': None,
+        }
 
     def on_closing(self):
         self.servidor.close()
@@ -107,17 +117,17 @@ class ServidorNotas(tk.Tk):
                     self.dados['instrucao'] = json_res["dd"][5]
                     self.log("\nSERVIÇO REQUERIDO\n")
                    # Estrutura a alterar por funções
-                    if dados['instrução'] == 'Criar_Nota':
-                        self.criar_nota(dados['nome'], dados['username'], dados['password'])
+                    if self.dados['instrução'] == 'Criar_Nota':
+                        self.criar_nota(self.dados['nome'], self.dados['username'], self.dados['password'])
+                        conexao.sendall(self.mostrar_notas(self.dados['username']))
+                    elif self.dados['instrução'] == 'Alterar_Nota':
+                        self.guardar_nota(self.dados['username'], self.dados['password'])
                         conexao.sendall(self.mostrar_notas(dados['username']))
-                    elif dados['instrução'] == 'Alterar_Nota':
-                        self.guardar_nota(dados['username'], dados['password'])
-                        conexao.sendall(self.mostrar_notas(dados['username']))
-                    elif dados['instrução'] == 'Eliminar_Nota':
-                        self.eliminar_nota(dados['username'])
-                        conexao.sendall(self.mostrar_notas(dados['username']))
-                    elif dados['instrução'] == 'Mostrar_Notas':
-                        conexao.sendall(self.mostrar_notas(dados['username']))
+                    elif self.dados['instrução'] == 'Eliminar_Nota':
+                        self.eliminar_nota(self.dados['username'])
+                        conexao.sendall(self.mostrar_notas(self.dados['username']))
+                    elif self.dados['instrução'] == 'Mostrar_Notas':
+                        conexao.sendall(self.mostrar_notas(self.dados['username']))
 
     def criar_nota(self, titulo, nota, id_utilizador):
         query = "INSERT INTO notas (titulo_nota, nota, ID_Utilizador) VALUES (%s, %s, %s)"
