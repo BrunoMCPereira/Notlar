@@ -57,6 +57,16 @@ class ServidorNotas(tk.Tk):
         )
 
         self.cursor = self.conn.cursor()
+        
+        self.dados = {
+
+            'username': None,
+            'username_id': None,
+            'nota': None,
+            'nova nota': None,
+            'instrucao': None,
+        }
+            
 
         self.inicializar_servidor()
 
@@ -80,58 +90,34 @@ class ServidorNotas(tk.Tk):
             tratamento.start()
 
     def processar_mensagem(self, conexao):
-        dados = {
-            'username_id': '',
-            'instrução': '',
-            'notas': ['ID', 'titulo', 'nota']
-        }
         ligacao = True
         while ligacao:
-            mensagem = conexao.recv(1024).decode('utf-8')
-            if mensagem == "!DISCONNECTAR":
-                conexao.close()
-                ligacao = False
-        #Melhoria deste tratamento
-        mensagem = mensagem.replace("}", "")
-        self.log("\nSERVIÇO REQUERIDO\n")
-        mensagem = mensagem.replace("{", "")
-        mensagem = mensagem.replace("]", "")
-        mensagem_nt = mensagem.split("[")
-        mensagem_nt: str = mensagem_nt[1]
-        mensagem_nt = mensagem_nt.replace("'", "")
-        mensagem_nt: list[str] = mensagem_nt.split(",")
-        for i in range(len(mensagem_nt)):
-            mensagem_nt[i] = mensagem_nt[i].replace(" ", "", 1)
-        dados['notas'] = mensagem_nt
-        mensagem = mensagem.replace("'", "")
-        mensagem = mensagem.replace("[", "")
-        mensagem = mensagem.replace(" ", "")
-        mensagem = mensagem.split(",")
-        dados_transmitidos = []
-        for i in range(len(mensagem)):
-            mensagem[i] = mensagem[i].split(":")
-            dados_transmitidos.append(mensagem[i])
-        username = dados_transmitidos[0]
-        dados['username'] = username[1]
-        password = dados_transmitidos[1]
-        dados['password'] = password[1]
-        nome = dados_transmitidos[2]
-        dados['nome'] = nome[1]
-        instrucao = dados_transmitidos[3]
-        dados['instrução'] = instrucao[1]
-
-        # Estrutura a alterar por funções
-        if dados['instrução'] == 'Criar_Nota':
-            self.criar_nota(dados['nome'], dados['username'], dados['password'])
-            conexao.sendall(self.mostrar_notas(dados['username']))
-        elif dados['instrução'] == 'Alterar_Nota':
-            self.guardar_nota(dados['username'], dados['password'])
-            conexao.sendall(self.mostrar_notas(dados['username']))
-        elif dados['instrução'] == 'Eliminar_Nota':
-            self.eliminar_nota(dados['username'])
-            conexao.sendall(self.mostrar_notas(dados['username']))
-        elif dados['instrução'] == 'Mostrar_Notas':
-            conexao.sendall(self.mostrar_notas(dados['username']))
+            mensagem_encriptada = conexao.recv().decode()
+            mensagem = c.desencriptar_cliente(mensagem_encriptada)
+            if mensagem:
+                if mensagem == MESSAGEM_DESCONECTAR:
+                    conexao.close()
+                    ligacao = False
+                else:
+                    json_res = json.loads(res[0])
+                    self.dados['username'] = json_res["dd"][1]
+                    self.dados['username_id'] = json_res["dd"][2]
+                    self.dados['nota'] = json_res["dd"][3]
+                    self.dados['nova nota'] = json_res["dd"][4]
+                    self.dados['instrucao'] = json_res["dd"][5]
+                    self.log("\nSERVIÇO REQUERIDO\n")
+                   # Estrutura a alterar por funções
+                    if dados['instrução'] == 'Criar_Nota':
+                        self.criar_nota(dados['nome'], dados['username'], dados['password'])
+                        conexao.sendall(self.mostrar_notas(dados['username']))
+                    elif dados['instrução'] == 'Alterar_Nota':
+                        self.guardar_nota(dados['username'], dados['password'])
+                        conexao.sendall(self.mostrar_notas(dados['username']))
+                    elif dados['instrução'] == 'Eliminar_Nota':
+                        self.eliminar_nota(dados['username'])
+                        conexao.sendall(self.mostrar_notas(dados['username']))
+                    elif dados['instrução'] == 'Mostrar_Notas':
+                        conexao.sendall(self.mostrar_notas(dados['username']))
 
     def criar_nota(self, titulo, nota, id_utilizador):
         query = "INSERT INTO notas (titulo_nota, nota, ID_Utilizador) VALUES (%s, %s, %s)"
