@@ -10,7 +10,7 @@ from controllers.controller import Conexao as c
 
 utilizador_ativo = None
 
-PATH = Path(__file__)
+PATH = Path(__file__).absolute().parent
 
 class Notlar(tk.Tk):
     def __init__(self, title, size):
