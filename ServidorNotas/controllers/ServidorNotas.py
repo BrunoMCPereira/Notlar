@@ -123,10 +123,10 @@ class ServidorNotas(tk.Tk):
                     elif self.dados['instrução'] == 'Alterar_Nota':
                         self.guardar_nota(self.dados['username'], self.dados['password'])
                         conexao.sendall(self.mostrar_notas(dados['username']))
-                    elif dados['instrução'] == 'Eliminar_Nota':
+                    elif self.dados['instrução'] == 'Eliminar_Nota':
                         self.eliminar_nota(self.dados['username'])
                         conexao.sendall(self.mostrar_notas(self.dados['username']))
-                    elif dados['instrução'] == 'Mostrar_Notas':
+                    elif self.dados['instrução'] == 'Mostrar_Notas':
                         conexao.sendall(self.mostrar_notas(self.dados['username']))
 
     def criar_nota(self, titulo, nota, id_utilizador):
