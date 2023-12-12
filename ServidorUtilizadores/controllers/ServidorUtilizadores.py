@@ -38,7 +38,7 @@ class ServidorUtilizadores(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Servidor Utilizadores")
-        self.geometry("800x600")
+        self.geometry("475x175")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         self.interface = PromptServidor(self)
@@ -81,7 +81,7 @@ class ServidorUtilizadores(tk.Tk):
 
     def inicializar_servidor(self):
         self.servidor.listen()
-        self.log("SERVIDOR INICIALIZADO...")
+        self.log(f'SERVIDOR INICIALIZADO em {SERVER}...')
 
         threading.Thread(target=self.aceitar_conexoes).start()
         self.after(100, self.atualizar_text_area)

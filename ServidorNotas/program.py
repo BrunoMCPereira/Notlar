@@ -1,5 +1,5 @@
-
+from controllers.ServidorNotas import ServidorNotas
 
 if __name__ == "__main__":
-    app = ServidorApp()
+    app = ServidorNotas()
     app.mainloop()

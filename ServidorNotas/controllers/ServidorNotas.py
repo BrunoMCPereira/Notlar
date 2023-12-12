@@ -30,7 +30,7 @@ class PromptServidor(ttk.Frame):
 
     def atualizar_texto(self):
         self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(tk.END, prompt_servidor)
+        self.text_area.insert(tk.END, self.comand_prompt)
         self.after(100, self.atualizar_texto)
 
 class ServidorNotas(tk.Tk):
@@ -89,7 +89,7 @@ class ServidorNotas(tk.Tk):
 
     def inicializar_servidor(self):
         self.servidor.listen()
-        self.log("SERVIDOR INICIALIZADO...")
+        self.log(f'SERVIDOR INICIALIZADO em {SERVER}...')
 
         threading.Thread(target=self.aceitar_conexoes).start()
         self.after(100, self.atualizar_text_area)
