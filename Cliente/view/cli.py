@@ -63,7 +63,7 @@ class MenuInicial(ttk.Frame):
         titulo_label.grid(row=1, column=1, sticky="w", padx=10, pady=40)
 
         # Frase
-        frase_label = ttk.Label(self, text="O seu Bloco de Notas On-line", font=('Comic Sans MS', 16))
+        frase_label = ttk.Label(self, text="O seu Bloco de Notas Virtual", font=('Comic Sans MS', 16))
         frase_label.grid(row=1, column=2, sticky="e", padx=10, pady=40)
 
         # Botões
