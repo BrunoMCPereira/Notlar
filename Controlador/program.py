@@ -1,5 +1,5 @@
-from Controlador.controllers.Server import ServidorNotas
+from controllers.Server import ControladorPrincipal
 
 if __name__ == "__main__":
-    app = ServidorNotas()
+    app = ControladorPrincipal()
     app.mainloop()
