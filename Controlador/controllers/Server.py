@@ -54,8 +54,8 @@ class ServidorNotas(tk.Tk):
         self.conn = mysql.connector.connect(
             host="127.0.0.1",
             port=3306,
-            user="Sistemas_Distribuidos",
-            password="Base_Dados_Notas",
+            user="root",
+            password="root",
             db="notlar"
         )
 
