@@ -1,46 +1,35 @@
 import string
 import random
 import json
+import xmlrpc.client
+import socket
+import json
+from controllers.controller import UtilizadorActivo  # Importando a classe UtilizadorActivo
 
-class Comunicacao:
-    @staticmethod
-    def criar_sessao() -> str:
-        tamanho_string = 12
-        letras = string.ascii_lowercase
-        string_aleatoria = "".join(random.choice(letras) for _ in range(tamanho_string))
-        return "s_" + string_aleatoria
+PORTA = 5050
+IP_SERVIDOR = "endereço_ip_do_servidor"  # Substitua pelo IP real do servidor
+FORMATO = 'utf-8'
 
-    @staticmethod
-    def cabecalho(sessao):
-        return f"~m~{len(sessao)}~m~{sessao}"
+class ConexaoControlador:
+    def __init__(self):
+        self.cliente = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.cliente.connect((IP_SERVIDOR, PORTA))
 
-    @staticmethod
-    def construir_mensagem(func, param_list):
-        return json.dumps({"m": func, "p": param_list}, separators=(",", ":"))
-
-    @staticmethod
-    def criar_mensagem(func, param_list):
-        return Comunicacao.cabecalho(Comunicacao.construir_mensagem(func, param_list))
-
-    @staticmethod
-    def criar_identificador_nota():
-        string_length = 10
-        letras = string.ascii_lowercase
-        id_nota = "".join(random.choice(letras) for _ in range(string_length))
-        return "n_" + id_nota
-    
-    def criar_identificador_utilizador():
-        string_length = 10
-        letras = string.ascii_lowercase
-        id_utilizador = "".join(random.choice(letras) for _ in range(string_length))
-        return "u_" + id_utilizador
-    
-    @staticmethod
-    def encriptar(texto):
-        chave=5
+    def encriptar_cliente(texto: str) -> str:
+        chave = 5
         return "".join([chr(ord(algo) + chave) for algo in texto])
     
-    @staticmethod
-    def desencriptar(texto):
+    def desencriptar_cliente(texto: str) -> str:
         chave=5
         return "".join([chr(ord(algo) - chave) for algo in texto])
+
+    def tratamento_mensagem(self, mensagem):
+        """ Envia uma mensagem encriptada para o servidor e aguarda a resposta. """
+        mensagem_encriptada = self.encriptar_cliente(mensagem)
+        self.cliente.send(mensagem_encriptada.encode(FORMATO))
+        resposta_enc = self.cliente.recv(2048).decode(FORMATO)
+        resposta = self.desencriptar_cliente(resposta_enc)
+        return resposta
+
+    def fechar_conexao(self):
+        self.cliente.close()

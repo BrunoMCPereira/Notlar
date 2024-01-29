@@ -1,4 +1,4 @@
-from ServidorUtilizadores.controllers.ServidorServicos import ServidorUtilizadores
+from ServidorServicos.controllers.Servidor import ServidorUtilizadores
 
 
 if __name__ == "__main__":

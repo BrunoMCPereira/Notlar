@@ -6,7 +6,7 @@ from ttkbootstrap.constants import *
 from pathlib import Path
 from ttkbootstrap.toast import ToastNotification
 from controllers.controller import UtilizadorActivo as u
-from controllers.controller import Conexao as c
+from models.conexao import ConexaoControlador as c
 
 utilizador_ativo = None
 
@@ -135,8 +135,7 @@ class MenuRegisto(ttk.Frame):
             dados.mensagem['Username'] = f'{self.entry_username.get()}'
             dados.mensagem['Password'] = f'{self.entry_password.get()}'
             dados = dados.dados_mensagem()
-            morada = c.criar_conexao
-            if (c.enviar_mensagem(morada,dados) == True):
+            if (c.tratamento_mensagem(dados) == True):
                 # Notificação de sucesso
                 toast = ToastNotification(
                     title="Registo Bem-sucedido",
@@ -204,8 +203,8 @@ class MenuValidacao(ttk.Frame):
         dados.mensagem['instrucao'] = 'Validar_Utilizador'
         dados.mensagem['Username'] = f'{self.entry_username.get()}'
         dados.mensagem['Password'] = f'{self.entry_password.get()}'
-        morada = c.criar_conexao
-        if (c.enviar_mensagem(morada,dados) == True):
+        dados = dados.dados_mensagem()
+        if (c.tratamento_mensagem(dados) == True):
             global utilizador_ativo
             utilizador_ativo = dados.mensagem['Username']
             self.mostrar_toast_sucesso()
@@ -491,17 +490,17 @@ class MenuAlterarUsername(ttk.Frame):
             mensagem['Nome'] = f'{self.entry_nome.get()}'
             mensagem['Username'] = f'{self.entry_username.get()}'
             mensagem['Password'] = f'{senha}'
-            c.mensagens_user(c.comunicacao(mensagem))
-
+            dados = dados.dados_mensagem()
+            if (c.tratamento_mensagem(dados) == True):
             # Notificação de sucesso
-            toast = ToastNotification(
-                title="Registo Bem-sucedido",
-                message="O utilizador foi registado com sucesso!",
-                position=(400, 300, "ne"),
-                duration=3000,
-                bootstyle=SUCCESS
-            )
-            toast.show_toast()
+                toast = ToastNotification(
+                    title="Registo Bem-sucedido",
+                    message="O utilizador foi registado com sucesso!",
+                    position=(400, 300, "ne"),
+                    duration=3000,
+                    bootstyle=SUCCESS
+                )
+                toast.show_toast()
 
             # Limpar campos
             self.entry_nome.delete(0, tk.END)
