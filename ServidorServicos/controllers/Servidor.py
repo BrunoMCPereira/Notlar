@@ -92,46 +92,58 @@ class ServidorServicos(tk.Tk):
         mensagem : dict = ast.literal_eval(mensagem_d)
         instrucao = mensagem['instrução']
         if instrucao == 'Criar Utilizador':
+            self.log(f'Solicitado criação de utilizador')
             resposta = self.criar_utilizador(mensagem)
-            self.log(f'{resposta}')
-            self.log(f'{type(resposta)}')
             resposta_encriptada = self.encriptar(str(resposta))
-            self.log(f'{type(resposta_encriptada)}')
-            self.log(f'{resposta_encriptada}')
+
             conexao.send(resposta_encriptada.encode(FORMATO))
             self.log(f'RESPOSTA ENVIADA a Controlador Principal ')
         elif instrucao == 'Alterar Password':
-            resposta = self.alterar_password()
+            self.log(f'Solicitado alteração de Password')
+            resposta = self.alterar_password(mensagem)
             resposta_encriptada = self.encriptar(str(resposta))
             conexao.send(resposta_encriptada.encode(FORMATO))
-            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal')
+        elif instrucao == 'Alterar Username':
+            self.log(f'Solicitado alteração de Username')
+            resposta = self.alterar_username(mensagem)
+            resposta_encriptada = self.encriptar(str(resposta))
+            conexao.send(resposta_encriptada.encode(FORMATO))
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal')
         elif instrucao == 'Eliminar Registo':
-            resposta = self.eliminar_registo()
+            self.log(f'Solicitado eliminação de utilizador')
+            resposta = self.eliminar_registo(mensagem)
             resposta_encriptada = self.encriptar(str(resposta))
             conexao.send(resposta_encriptada.encode(FORMATO))
-            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal')
         elif instrucao == 'Validar Utilizador':
-            resposta = self.validar_utilizador()
+            self.log(f'Solicitado Validação de Utilizador')
+            resposta = self.validar_utilizador(mensagem)
             resposta_encriptada = self.encriptar(str(resposta))
             conexao.send(resposta_encriptada.encode(FORMATO))
-            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal')
         elif instrucao == 'Criar Nota':
-            resposta = self.criar_nota()
+            self.log(f'Solicitado criação de nota')
+            resposta = self.criar_nota(mensagem)
             resposta_encriptada = self.encriptar(str(resposta))
             conexao.send(resposta_encriptada.encode(FORMATO))
-            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal')
         elif instrucao == 'Guardar Nota':
-            resposta = self.guardar_nota()
+            self.log(f'Solicitado arquivo de nota')
+            resposta = self.guardar_nota(mensagem)
             resposta_encriptada = self.encriptar(str(resposta))
             conexao.send(resposta_encriptada.encode(FORMATO))
-            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal')
         elif instrucao == 'Eliminar Nota':
-            resposta = self.eliminar_nota()
+            self.log(f'Solicitado eliminação de nota')
+            resposta = self.eliminar_nota(mensagem)
             resposta_encriptada = self.encriptar(str(resposta))
             conexao.send(resposta_encriptada.encode(FORMATO))
-            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal')
         elif instrucao == 'Mostrar Notas':
-            resposta : dict = self.mostrar_notas()
+            self.log(f'Solicitada a disponibilização de notas')
+            resposta : dict = self.mostrar_notas(mensagem)
+            self.log(f'{resposta}')
             mensagem = str(resposta)
             mensagem_enc = self.encriptar(mensagem)
             mennsagem_cod = mensagem_enc.encode(FORMATO)
@@ -149,10 +161,13 @@ class ServidorServicos(tk.Tk):
         values = (nome, username, password)
         self.cursor.execute(query, values)
         self.conn.commit()
+        self.log(f'Criado utilizador')
         return True
 
     def alterar_password(self, mensagem) -> bool:
-        if self.validar_utilizador(mensagem) == True:
+        valida = bool(self.validar_utilizador(mensagem))
+        self.log(f'{valida}')
+        if (valida == True):
             username_db = mensagem['username']
             username = self.encriptar(username_db)
             n_password_db = mensagem['nova password']
@@ -161,18 +176,37 @@ class ServidorServicos(tk.Tk):
             values = (n_password, username)
             self.cursor.execute(query, values)
             self.conn.commit()
+            self.log(f'Alterada Password')
+            return True
+        else:
+            return False
+        
+    def alterar_username(self, mensagem) -> bool:
+        valida = bool(self.validar_utilizador(mensagem))
+        self.log(f'{valida}')
+        if (valida == True):
+            username_db = mensagem['username']
+            username = self.encriptar(username_db)
+            n_username_db = mensagem['novo username']
+            n_username = self.encriptar(n_username_db)
+            query = "UPDATE utilizador SET username = %s WHERE username = %s"
+            values = (n_username, username)
+            self.cursor.execute(query, values)
+            self.conn.commit()
+            self.log(f'Alterado Username')
             return True
         else:
             return False
 
     def eliminar_registo(self,mensagem) -> bool:
-        if self.validar_utilizador(mensagem) == True:
+        if (self.validar_utilizador(mensagem) == True):
             username_db = mensagem['username']
             username = self.encriptar(username_db)
             query = "DELETE FROM utilizador WHERE username = %s"
             values = (username,)
             self.cursor.execute(query, values)
             self.conn.commit()
+            self.log(f'Eliminado Utilizador')
             return True
 
     def validar_utilizador(self,mensagem) -> bool:
@@ -180,16 +214,11 @@ class ServidorServicos(tk.Tk):
         username = self.encriptar(username_db)
         password_db = mensagem['password']
         password = self.encriptar(password_db)
-        values = (password, username)
+        values = (username,password)
         query = "SELECT * FROM utilizador WHERE username = %s AND password = %s"
         self.cursor.execute(query, values)
         usuario = self.cursor.fetchone()
-        if usuario is None:
-            return False
-        elif username in usuario:
-            return False
-        else:
-            return True
+        return usuario is not None
 
     def criar_nota(self, mensagem):
         username_db = mensagem['username']
@@ -207,6 +236,7 @@ class ServidorServicos(tk.Tk):
         values = (titulo, nota, id_utilizador)
         self.cursor.execute(query, values)
         self.conn.commit()
+        self.log(f'Criada Nota')
 
     def guardar_nota(self, mensagem):
         username_db = mensagem['username']
@@ -225,6 +255,7 @@ class ServidorServicos(tk.Tk):
         values = (titulo, nota, id_utilizador, nota_id)
         self.cursor.execute(query, values)
         self.conn.commit()
+        self.log(f'Nota Guardada')
 
     def eliminar_nota(self, mensagem):
         nota_db = mensagem['notas']
@@ -233,6 +264,7 @@ class ServidorServicos(tk.Tk):
         values = (nota_id,)
         self.cursor.execute(query, values)
         self.conn.commit()
+        self.log(f'Nota Eliminada')
 
     def mostrar_notas(self,mensagem):
         username_db = mensagem['username']
@@ -250,7 +282,8 @@ class ServidorServicos(tk.Tk):
             notas.append(i) # id
             notas.append(self.desencriptar(i+1)) # titulo
             notas.append(self.desencriptar(i+3)) # nota
-        mensagem[notas] = notas
+        mensagem['notas'] = notas
+        self.log(f'Notas disponibilizadas')
         return mensagem
 
     def log(self, mensagem):

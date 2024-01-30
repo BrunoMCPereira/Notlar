@@ -55,3 +55,9 @@ class ConexaoControlador:
         self.cliente.send(mensagem_desconexao.encode(FORMATO))
         self.cliente.close()
 
+
+    def obter_notas(self, mensagem):
+        self.cliente.send(mensagem.encode(FORMATO))
+        resposta_enc_c = self.cliente.recv(2048)
+        resposta_enc = resposta_enc_c.decode(FORMATO)
+        resposta: str = self.desencriptar_cliente(resposta_enc)
