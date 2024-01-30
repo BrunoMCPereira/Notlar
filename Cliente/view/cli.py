@@ -112,7 +112,7 @@ class MenuRegisto(ttk.Frame):
         ttk.Label(input_frame, text="Password:").pack(pady=5)
         self.entry_password = ttk.Entry(input_frame, show="*")  # Utilizando show="*" para esconder a password
         self.entry_password.pack(pady=5)
-        
+
         ttk.Label(input_frame, text="Confirmar Password:").pack(pady=5)
         self.entry_confirm_password = ttk.Entry(input_frame, show="*")  # Utilizando show="*" para esconder a password
         self.entry_confirm_password.pack(pady=5)
@@ -201,13 +201,13 @@ class MenuValidacao(ttk.Frame):
 
     def validar(self):
         dados = u()
-        dados.mensagem['servidor'] = 'utilizadores'
-        dados.mensagem['instrucao'] = 'Validar Utilizador'
+        dados.mensagem['instrução'] = 'Validar Utilizador'
         dados.mensagem['username'] = f'{self.entry_username.get()}'
         dados.mensagem['password'] = f'{self.entry_password.get()}'
-        mensagem = str(dados.dados_mensagem())
+        mensagem = str(dados.mensagem)
+        mensagem_c = c.encriptar_cliente(mensagem)
         conexao = c()
-        if (conexao.tratamento_mensagem(mensagem) == True):
+        if (conexao.tratamento_mensagem(mensagem_c) == True):
             global utilizador_ativo
             global user_ativo
             utilizador_ativo = dados.mensagem['nome']
@@ -321,7 +321,7 @@ class MenuAlterações(ttk.Frame):
         # Novo frame para os botões de retorno
         buttonsr_frame = ttk.Frame(self)
         buttonsr_frame.grid(row=20, column=4, columnspan=5, pady=20)
-        
+
         btn_voltar = ttk.Button(buttonsr_frame, text="Voltar ao Menu Anterior", style='light-outline.TButton',command=lambda: self.controlador.mostrar_pagina(MenuLogin))
         btn_voltar.pack(side='left', padx=10, pady=30)
 
@@ -341,16 +341,10 @@ class MenuNotas(ttk.Frame):
         self.controlador = controlador
 
         self.id_notas =[]
-        dados = u()
-        dados.mensagem['instrução'] = 'Mostrar Notas'
-        dados.mensagem['username'] = user_ativo
-        mensagem = str(dados.mensagem)
-        mensagem_c = c.encriptar_cliente(mensagem)
-        conexao = c()
-        dic = conexao.tratamento_mensagem(mensagem_c)
-        notas = dic['notas']
+        self.notas = []
+        self.total_n = None
+        
 
-        self.total_n = len(notas)
 
         # Logo e Título da App
         top_frame = ttk.Frame(self)
@@ -370,10 +364,10 @@ class MenuNotas(ttk.Frame):
         self.notebook.grid(row=1, column=0, columnspan=20, sticky="NESW", padx=1, pady=1)
 
         # Itera sobre a lista de notas e adiciona cada par de notas ao Notebook
-        for i in range(0, len(notas), 3):
-            id_nota = notas[i]
-            titulo_nota = notas[i + 1]
-            conteudo_nota = notas[i + 2]
+        for i in range(0, len(self.notas), 3):
+            id_nota = self.notas[i]
+            titulo_nota = self.notas[i + 1]
+            conteudo_nota = self.notas[i + 2]
 
             frame_nota = ttk.Frame(self.notebook)
             self.notebook.add(frame_nota, text=titulo_nota)
@@ -389,20 +383,20 @@ class MenuNotas(ttk.Frame):
 
             btn_guardar_nota = ttk.Button(frame_nota, text="Eliminar Nota",style='secondary-outline.TButton', command=lambda i=id_nota : self.eliminar_nota(i))
             btn_guardar_nota.grid(row=2, column=0, pady=1)
-            
-            btn_nova_nota = ttk.Button(frame_nota, text="Guardar Nota", style='warning-outline.TButton',command=self.adicionar_nova_nota)
+
+            btn_nova_nota = ttk.Button(frame_nota, text="Guardar Nota", style='warning-outline.TButton',command=lambda i=id_nota, t=text_nota, e=entry_titulo : self.guardar_nova_nota(i,t,e))
             btn_nova_nota.grid(row=2, column=24, sticky='E')
             # Botão para adicionar nova nota
-            
+
             btn_nova_nota = ttk.Button(frame_nota, text="Criar nova Nota", style='success-outline.TButton',command=self.adicionar_nova_nota)
             btn_nova_nota.grid(row=2, column=48, sticky='E')
-            
-            
+
+
 
        # Novo frame para os botões de retorno
         buttonsr_frame = ttk.Frame(self)
         buttonsr_frame.grid(row=20, column=0, columnspan=5, pady=5)
-        
+
         btn_voltar = ttk.Button(buttonsr_frame, text="Voltar ao Menu Anterior", style='light-outline.TButton',command=lambda: self.controlador.mostrar_pagina(MenuLogin))
         btn_voltar.pack(side='left', padx=10, pady=30)
 
@@ -417,9 +411,17 @@ class MenuNotas(ttk.Frame):
         # Configurar para que a coluna e a linha se expandam conforme o redimensionamento da janela
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
-        
+
         # Botão para adicionar nova nota
-        
+    def obter_notas(self):
+        dados = u()
+        dados.mensagem['instrução'] = 'Mostrar Notas'
+        dados.mensagem['username'] = user_ativo
+        mensagem = str(dados.mensagem)
+        mensagem_c = c.encriptar_cliente(mensagem)
+        conexao = c()
+        dic = conexao.tratamento_mensagem(mensagem_c)
+        self.notas = dic['notas']
 
     def adicionar_nova_nota(self):
         id_nota = self.total_n + 1
@@ -436,14 +438,13 @@ class MenuNotas(ttk.Frame):
         text_nova_nota = tk.Text(frame_nova_nota, wrap=tk.WORD, height=10, width=125)
         text_nova_nota.grid(row=1, column=0, columnspan=50, padx=5, pady=5)
 
-        btn_guardar_nova_nota = ttk.Button(frame_nova_nota, text="Eliminar Nota", style='secondary-outline.TButton',
-                                           command=lambda i=id_nota : self.eliminar_nota(i))
+        btn_guardar_nova_nota = ttk.Button(frame_nova_nota, text="Eliminar Nota", style='secondary-outline.TButton',command=lambda i=id_nota : self.eliminar_nota(i))
         btn_guardar_nova_nota.grid(row=2, column=0, pady=1)
-        
+
         btn_nova_nota = ttk.Button(frame_nova_nota, text="Guardar Nota", style='warning-outline.TButton',command=lambda i=id_nota, t=text_nova_nota, e=entry_titulo_nova_nota : self.guardar_nova_nota(i,t,e))
         btn_nova_nota.grid(row=2, column=24, sticky='E')
-        
-        btn_nova_nota = ttk.Button(frame_nova_nota, text="Criar nova Nota", style='success-outline.TButton',command=lambda t=text_nova_nota, e=entry_titulo_nova_nota : self.adicionar_nova_nota(t,e))
+
+        btn_nova_nota = ttk.Button(frame_nova_nota, text="Criar nova Nota", style='success-outline.TButton',command=lambda i=id_nota, t=text_nova_nota, e=entry_titulo_nova_nota : self.guardar_nova_nota(i,t,e))
         btn_nova_nota.grid(row=2, column=48, sticky='E')
 
     def guardar_nova_nota(self, id_nota, text_widget, entry_widget):
@@ -480,10 +481,7 @@ class MenuNotas(ttk.Frame):
                 bootstyle=DANGER
             )
             toast.show_toast()
-            
-            
-            
-            
+
     def eliminar_nota(self, id_nota):
         # Obtenha o conteúdo e o título da nova nota
         id_n = id_nota
@@ -539,61 +537,63 @@ class MenuAlterarUsername(ttk.Frame):
         input_frame.grid(row=1, column=0, columnspan=2)
 
         ttk.Label(input_frame, text="Username Atual:").pack(pady=5)
-        self.entry_nome = ttk.Entry(input_frame)
-        self.entry_nome.pack(pady=5)
+        self.username = ttk.Entry(input_frame)
+        self.username.pack(pady=5)
 
         ttk.Label(input_frame, text="Novo Username:").pack(pady=5)
-        self.entry_username = ttk.Entry(input_frame,  show="*")
-        self.entry_username.pack(pady=5)
+        self.username_n = ttk.Entry(input_frame,  show="*")
+        self.username_n.pack(pady=5)
 
         ttk.Label(input_frame, text="Password:").pack(pady=5)
-        self.entry_confirm_password = ttk.Entry(input_frame, show="*")  # Utilizando show="*" para esconder a password
-        self.entry_confirm_password.pack(pady=10)
+        self.password = ttk.Entry(input_frame, show="*")  # Utilizando show="*" para esconder a password
+        self.password.pack(pady=10)
 
         # Botão para submeter o registo
-        btn_registar = ttk.Button(self, text="Alterar Username", style='success-outline.TButton', command=self.validar_registo)
+        btn_registar = ttk.Button(self, text="Alterar Username", style='success-outline.TButton', command=self.alterar_username)
         btn_registar.grid(row=2, column=0, columnspan=2, pady=10)
 
         # Botão para voltar ao Menu Inicial
         btn_voltar = ttk.Button(self, text="Voltar ao Menu Anterior", style='secondary-outline.TButton', command=lambda: self.controlador.mostrar_pagina(MenuAlterações))
         btn_voltar.grid(row=3, column=0, columnspan=2, pady=10)
 
-    def validar_registo(self):
-        senha = self.entry_password.get()
-        confirmar_senha = self.entry_confirm_password.get()
-        if senha == confirmar_senha:
-            dados = u()
-            dados.mensagem['instrução'] = 'Validar Registo'
-            dados.mensagem['nome'] = f'{self.entry_nome.get()}'
-            dados.mensagem['username'] = f'{self.entry_username.get()}'
-            dados.mensagem['password'] = f'{self.entry_password.get()}'
+    def alterar_username(self):
+        dados = u()
+        dados.mensagem['instrução'] = 'Validar Registo'
+        dados.mensagem['username'] = f'{self.username.get()}'
+        dados.mensagem['password'] = f'{self.password.get()}'
+        mensagem = str(dados.mensagem)
+        mensagem_c = c.encriptar_cliente(mensagem)
+        conexao = c()
+        if (conexao.tratamento_mensagem(mensagem_c) == True):
+            dados.mensagem['instrução'] = 'Alterar Username'
+            dados.mensagem['novo username'] = f'{self.username_n.get()}'
             mensagem = str(dados.mensagem)
             mensagem_c = c.encriptar_cliente(mensagem)
             conexao = c()
             if (conexao.tratamento_mensagem(mensagem_c) == True):
-                # Notificação de sucesso
+            # Notificação de sucesso
                 toast = ToastNotification(
-                    title="Registo Bem-sucedido", 
-                    message="O utilizador foi registado com sucesso!",
+                    title="Username Alterado",
+                    message="Username alterado com sucesso!",
                     position=(400, 300, "ne"),
                     duration=5000,
                 bootstyle=SUCCESS
                 )
                 toast.show_toast()
                 self.controlador.mostrar_pagina(MenuInicial)
-        else:
-            # Notificação de erro
-            toast = ToastNotification(
-                title="Erro no Registo",
-                message="As senhas não coincidem. Por favor, tente novamente.",
-                position=(400, 300, "ne"),
-                duration=5000,
-                bootstyle=DANGER
-            )
-            toast.show_toast()
-            # Limpar campos de senha
-            self.entry_password.delete(0, tk.END)
-            self.entry_confirm_password.delete(0, tk.END)
+            else:
+                # Notificação de erro
+                toast = ToastNotification(
+                    title="Erro no Registo",
+                    message="Por favor, tente novamente.",
+                    position=(400, 300, "ne"),
+                    duration=5000,
+                    bootstyle=DANGER
+                )
+                toast.show_toast()
+                # Limpar campos de senha
+                self.password.delete(0, tk.END)
+                self.username_n.delete(0, tk.END)
 
 class MenuAlterarPassword(ttk.Frame):
     def __init__(self, controlador):
@@ -617,70 +617,66 @@ class MenuAlterarPassword(ttk.Frame):
         input_frame.grid(row=1, column=0, columnspan=2)
 
         ttk.Label(input_frame, text="Username:").pack(pady=5)
-        self.entry_nome = ttk.Entry(input_frame)
-        self.entry_nome.pack(pady=5)
+        self.username = ttk.Entry(input_frame)
+        self.username.pack(pady=5)
 
         ttk.Label(input_frame, text="Password:").pack(pady=5)
-        self.entry_username = ttk.Entry(input_frame,  show="*")
-        self.entry_username.pack(pady=5)
+        self.password = ttk.Entry(input_frame,  show="*")
+        self.password.pack(pady=5)
 
         ttk.Label(input_frame, text="Nova Password:").pack(pady=5)
-        self.entry_password = ttk.Entry(input_frame, show="*")  # Utilizando show="*" para esconder a password
-        self.entry_password.pack(pady=5)
+        self.password_n = ttk.Entry(input_frame, show="*")  # Utilizando show="*" para esconder a password
+        self.password_n.pack(pady=5)
         
         ttk.Label(input_frame, text="Confirmar Nova Password:").pack(pady=5)
-        self.entry_confirm_password = ttk.Entry(input_frame, show="*")  # Utilizando show="*" para esconder a password
-        self.entry_confirm_password.pack(pady=5)
+        self.c_password_n = ttk.Entry(input_frame, show="*")  # Utilizando show="*" para esconder a password
+        self.c_password_n.pack(pady=5)
 
         # Botão para submeter o registo
-        btn_registar = ttk.Button(self, text="Alterar Password", style='success-outline.TButton', command=self.validar_registo)
+        btn_registar = ttk.Button(self, text="Alterar Password", style='success-outline.TButton', command=self.alterar_password)
         btn_registar.grid(row=2, column=0, columnspan=2, pady=10)
 
         # Botão para voltar ao Menu Inicial
         btn_voltar = ttk.Button(self, text="Voltar ao Menu Anterior", style='secondary-outline.TButton', command=lambda: self.controlador.mostrar_pagina(MenuAlterações))
         btn_voltar.grid(row=3, column=0, columnspan=2, pady=10)
 
-    def validar_registo(self):
-        senha = self.entry_password.get()
-        confirmar_senha = self.entry_confirm_password.get()
-
+    def alterar_password(self):
+        senha = self.password_n.get()
+        confirmar_senha = self.c_password_n.get()
         if senha == confirmar_senha:
-            mensagem = c.criar_mensagem()
-            mensagem['Servidor'] = 'utilizadores'
-            mensagem['instrução'] = 'Criar_Utilizador'
-            mensagem['Nome'] = f'{self.entry_nome.get()}'
-            mensagem['Username'] = f'{self.entry_username.get()}'
-            mensagem['Password'] = f'{senha}'
-            c.mensagens_user(c.comunicacao(mensagem))
+            dados = u()
+            dados.mensagem['instrução'] = 'Alterar Password'
 
-            # Notificação de sucesso
-            toast = ToastNotification(
-                title="Registo Bem-sucedido",
-                message="O utilizador foi registado com sucesso!",
-                position=(400, 300, "ne"),
-                duration=3000,
+            dados.mensagem['username'] = f'{self.username.get()}'
+            dados.mensagem['password'] = f'{self.password.get()}'
+            dados.mensagem['nova password'] = f'{self.password_n.get()}'
+            mensagem = str(dados.mensagem)
+            mensagem_c = c.encriptar_cliente(mensagem)
+            conexao = c()
+            if (conexao.tratamento_mensagem(mensagem_c) == True):
+                # Notificação de sucesso
+                toast = ToastNotification(
+                    title="Registo Bem-sucedido", 
+                    message="A Password foi alterada com sucesso!",
+                    position=(400, 300, "ne"),
+                    duration=5000,
                 bootstyle=SUCCESS
-            )
-            toast.show_toast()
-
-            # Limpar campos
-            self.entry_nome.delete(0, tk.END)
-            self.entry_username.delete(0, tk.END)
-            self.entry_password.delete(0, tk.END)
-            self.entry_confirm_password.delete(0, tk.END)
+                )
+                toast.show_toast()
+                self.controlador.mostrar_pagina(MenuInicial)
         else:
             # Notificação de erro
             toast = ToastNotification(
                 title="Erro no Registo",
                 message="As senhas não coincidem. Por favor, tente novamente.",
                 position=(400, 300, "ne"),
-                duration=3000,
+                duration=5000,
                 bootstyle=DANGER
             )
             toast.show_toast()
             # Limpar campos de senha
-            self.entry_password.delete(0, tk.END)
-            self.entry_confirm_password.delete(0, tk.END)
+            self.password_n.delete(0, tk.END)
+            self.c_password_n.delete(0, tk.END)
 
 class Controlador:
     def __init__(self, aplicacao):
