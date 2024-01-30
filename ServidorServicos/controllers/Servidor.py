@@ -1,55 +1,46 @@
 import socket
-import json
 import mysql.connector
 import threading
 import tkinter as tk
 import ttkbootstrap as ttk
-from models.criptografia import Criptografia as c
+import ast
 
-SERVER = socket.gethostbyname(socket.gethostname())
-PORTA = 5050
-MORADA = (SERVER, PORTA)
-FORMATO = 'utf-8'
-MESSAGEM_DESCONECTAR = "!DISCONNECTAR"
-
-
+SERVER = socket.gethostbyname(socket.gethostname())  # Obtem o IP do Servidor de Serviços
+PORTA_S = 5030
+MORADA_S = (SERVER, PORTA_S)
+FORMATO = "utf-8"
 
 class PromptServidor(ttk.Frame):
-    def __init__(self, master):
+    def __init__(self, master, server_log_var):
         super().__init__(master)
+        self.server_log_var = server_log_var
         self.grid(row=0, column=0, sticky="nsew")
         self.comand_prompt()
 
     def comand_prompt(self):
         self.style = ttk.Style()
         self.style.theme_use('superhero')
-
         self.text_area = tk.Text(self, wrap=tk.WORD, height=10, width=75)
         self.text_area.grid(row=0, column=0, padx=5, pady=5)
+        self.atualizar_text_area()
 
-        self.after(100, self.atualizar_texto)
-
-    def atualizar_texto(self):
+    def atualizar_text_area(self):
         self.text_area.delete(1.0, tk.END)
-        self.text_area.insert(tk.END, self.comand_prompt)
-        self.after(10000, self.atualizar_texto)
+        self.text_area.insert(tk.END, self.server_log_var.get())
+        self.after(100, self.atualizar_text_area)
 
-class ServidorUtilizadores(tk.Tk):
+class ServidorServicos(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Servidor Utilizadores")
+        self.title("Servidor de Serviços")
         self.geometry("475x175")
         self.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-        self.interface = PromptServidor(self)
 
         self.style = ttk.Style()
         self.style.theme_use('superhero')
 
-        self.prompt_servidor = ""
-
-        self.servidor = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.servidor.bind((MORADA))
+        self.server_log = tk.StringVar()
+        self.interface = PromptServidor(self, self.server_log)
 
         self.conn = mysql.connector.connect(
             host="192.168.1.5",
@@ -58,149 +49,224 @@ class ServidorUtilizadores(tk.Tk):
             password="Base_Dados_Notas",
             db="notlar"
         )
-
         self.cursor = self.conn.cursor()
+        self.controlador = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.controlador.bind(MORADA_S)
 
         self.inicializar_servidor()
-        
-        self.dados = {
-
-            'nome': None,
-            'username': None,
-            'novo_username': None,
-            'password': None,
-            'nova password': None,
-            'instrucao': None,
-        }
-
 
     def on_closing(self):
-        self.servidor.close()
+        self.controlador.close()
         self.conn.close()
         self.destroy()
 
-    def inicializar_servidor(self):
-        self.servidor.listen()
-        self.log(f'SERVIDOR INICIALIZADO em {SERVER}...')
+    def log(self, mensagem):
+        current_log = self.server_log.get()
+        self.server_log.set(current_log + mensagem + "\n")
 
+    def inicializar_servidor(self):
+        self.controlador.listen()
+        self.log(f'SERVIDOR INICIALIZADO em {SERVER}...')
         threading.Thread(target=self.aceitar_conexoes).start()
-        self.after(100, self.atualizar_text_area)
 
     def aceitar_conexoes(self):
         while True:
-            conexao, morada = self.servidor.accept()
+            conexao, morada = self.controlador.accept()
             self.log(f'CONEXAO COM IP: {morada} ...')
-            tratamento = threading.Thread(target=self.processar_mensagem, args=(conexao, morada))
-            tratamento.start()
+            threading.Thread(target=self.processar_mensagem, args=(conexao,)).start()
 
-    def processar_mensagem(self, conexao, morada):
-        ligacao = True
-        while ligacao:
-            mensagem_encriptada = conexao.recv().decode()
-            mensagem = c.desencriptar_cliente(mensagem_encriptada)
-            if mensagem:
-                if mensagem == MESSAGEM_DESCONECTAR:
-                    conexao.close()
-                    ligacao = False
-                else:
-                    json_res = json.loads(res[0])
-                    self.dados['nome'] = json_res["dd"][1]
-                    self.dados['username'] = json_res["dd"][2]
-                    self.dados['novo_username'] = json_res["dd"][3]
-                    self.dados['password'] = json_res["dd"][4]
-                    self.dados['nova password'] = json_res["dd"][5]
-                    self.dados['instrucao'] = json_res["dd"][6]
-                    self.log("\nSERVIÇO REQUERIDO\n")
-                    if self.dados['instrução'] == 'Criar_Utilizador':
-                        resposta = self.criar_utilizador(self.dados['nome'], self.dados['username'], self.dados['password'])
-                        resposta_encriptada = c.encriptar_cliente(resposta)
-                        resposta_cliente = resposta_encriptada.encode()
-                        conexao.sendall(resposta_cliente)
-                        print(f'\nRESPOSTA ENVIADA a IP:{morada} \n')
-                    elif self.dados['instrução'] == 'Alterar_Password':
-                        resposta = self.alterar_password(self.dados['username'], self.dados['password'])
-                        resposta_encriptada = c.encriptar_cliente(resposta)
-                        resposta_cliente = resposta_encriptada.encode()
-                        conexao.sendall(resposta_cliente)
-                        print(f'\nRESPOSTA ENVIADA a IP:{morada} \n')
-                    elif self.dados['instrução'] == 'Eliminar_Registo':
-                        resposta = self.eliminar_registo(self.dados['username'])
-                        resposta_encriptada = c.encriptar_cliente(resposta)
-                        resposta_cliente = resposta_encriptada.encode()
-                        conexao.sendall(resposta_cliente)
-                        print(f'\nRESPOSTA ENVIADA a IP:{morada} \n')
+    def processar_desc_mensagem(self, mensagem_encriptada):
+        mensagem = self.desencriptar(mensagem_encriptada)
+        mensagem_d = ast.literal_eval(mensagem)
+        return mensagem_d
 
-    def criar_utilizador(self, nome, username, password) -> bool:
-        nome = c.encriptar_base_dados(nome)
-        username = c.encriptar_base_dados(username)
-        password = c.encriptar_base_dados(password)
-        query = "INSERT INTO utilizadores (Nome, Username, Password) VALUES (%s, %s, %s)"
+
+    def processar_enc_mensagem(self, mensagem_encriptada):
+        mensagem = self.encriptar(mensagem_encriptada)
+        return mensagem
+
+    def processar_mensagem(self, conexao):
+        mensagem_encriptada = conexao.recv(2048)
+        mensagem: str = mensagem_encriptada.decode("utf-8")
+        mensagem_d: str = self.desencriptar(mensagem)
+        mensagem : dict = ast.literal_eval(mensagem_d)
+        instrucao = mensagem['instrução']
+        if instrucao == 'Criar Utilizador':
+            resposta = self.criar_utilizador(mensagem)
+            self.log(f'{resposta}')
+            self.log(f'{type(resposta)}')
+            resposta_encriptada = self.encriptar(str(resposta))
+            self.log(f'{type(resposta_encriptada)}')
+            self.log(f'{resposta_encriptada}')
+            conexao.send(resposta_encriptada.encode(FORMATO))
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal ')
+        elif instrucao == 'Alterar Password':
+            resposta = self.alterar_password()
+            resposta_encriptada = self.encriptar(str(resposta))
+            conexao.send(resposta_encriptada.encode(FORMATO))
+            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+        elif instrucao == 'Eliminar Registo':
+            resposta = self.eliminar_registo()
+            resposta_encriptada = self.encriptar(str(resposta))
+            conexao.send(resposta_encriptada.encode(FORMATO))
+            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+        elif instrucao == 'Validar Utilizador':
+            resposta = self.validar_utilizador()
+            resposta_encriptada = self.encriptar(str(resposta))
+            conexao.send(resposta_encriptada.encode(FORMATO))
+            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+        elif instrucao == 'Criar Nota':
+            resposta = self.criar_nota()
+            resposta_encriptada = self.encriptar(str(resposta))
+            conexao.send(resposta_encriptada.encode(FORMATO))
+            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+        elif instrucao == 'Guardar Nota':
+            resposta = self.guardar_nota()
+            resposta_encriptada = self.encriptar(str(resposta))
+            conexao.send(resposta_encriptada.encode(FORMATO))
+            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+        elif instrucao == 'Eliminar Nota':
+            resposta = self.eliminar_nota()
+            resposta_encriptada = self.encriptar(str(resposta))
+            conexao.send(resposta_encriptada.encode(FORMATO))
+            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+        elif instrucao == 'Mostrar Notas':
+            resposta : dict = self.mostrar_notas()
+            mensagem = str(resposta)
+            mensagem_enc = self.encriptar(mensagem)
+            mennsagem_cod = mensagem_enc.encode(FORMATO)
+            conexao.send(mennsagem_cod)
+            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+
+    def criar_utilizador(self, mensagem) -> bool:
+        nome_db = mensagem['nome']
+        nome = self.encriptar(nome_db)
+        username_db = mensagem['username']
+        username = self.encriptar(username_db)
+        password_db = mensagem['password']
+        password = self.encriptar(password_db)
+        query = "INSERT INTO utilizador (nome, username, password) VALUES (%s, %s, %s)"
         values = (nome, username, password)
         self.cursor.execute(query, values)
         self.conn.commit()
         return True
 
-    def alterar_password(self, username, new_password) -> bool:
-        username = c.encriptar_base_dados(username)
-        new_password = c.encriptar_base_dados(new_password)
-        query = "UPDATE utilizadores SET Password = %s WHERE Username = %s"
-        values = (new_password, username)
-        self.cursor.execute(query, values)
-        self.conn.commit()
-        return True
+    def alterar_password(self, mensagem) -> bool:
+        if self.validar_utilizador(mensagem) == True:
+            username_db = mensagem['username']
+            username = self.encriptar(username_db)
+            n_password_db = mensagem['nova password']
+            n_password = self.encriptar(n_password_db)
+            query = "UPDATE utilizador SET password = %s WHERE username = %s"
+            values = (n_password, username)
+            self.cursor.execute(query, values)
+            self.conn.commit()
+            return True
+        else:
+            return False
 
-    def eliminar_registo(self, username) -> bool:
-        username = c.encriptar_base_dados(username)
-        query = "DELETE FROM utilizadores WHERE Username = %s"
-        values = (username,)
-        self.cursor.execute(query, values)
-        self.conn.commit()
-        return True
-    
-    def validar_utilizador(self, username, password) -> bool:
-        username = c.encriptar_base_dados(username)
-        password = c.encriptar_base_dados(password)
+    def eliminar_registo(self,mensagem) -> bool:
+        if self.validar_utilizador(mensagem) == True:
+            username_db = mensagem['username']
+            username = self.encriptar(username_db)
+            query = "DELETE FROM utilizador WHERE username = %s"
+            values = (username,)
+            self.cursor.execute(query, values)
+            self.conn.commit()
+            return True
+
+    def validar_utilizador(self,mensagem) -> bool:
+        username_db = mensagem['username']
+        username = self.encriptar(username_db)
+        password_db = mensagem['password']
+        password = self.encriptar(password_db)
         values = (password, username)
-        query = "SELECT * FROM utilizadores WHERE username = %s AND password = %s"
+        query = "SELECT * FROM utilizador WHERE username = %s AND password = %s"
         self.cursor.execute(query, values)
         usuario = self.cursor.fetchone()
         if usuario is None:
             return False
+        elif username in usuario:
+            return False
         else:
             return True
-        
-    def criar_nota(self, titulo, nota, id_utilizador):
-        query = "INSERT INTO notas (titulo_nota, nota, ID_Utilizador) VALUES (%s, %s, %s)"
+
+    def criar_nota(self, mensagem):
+        username_db = mensagem['username']
+        username = self.encriptar(username_db)
+        values = (username,)
+        query = "SELECT id FROM utilizadores WHERE username = %s"
+        self.cursor.execute(query, values)
+        id_utilizador = self.cursor.fetchone()
+        notas_db = mensagem['notas']
+        titulo_db = notas_db[1]
+        nota_db = notas_db[2]
+        titulo = self.encriptar(titulo_db)
+        nota = self.encriptar(nota_db)
+        query = "INSERT INTO notas (titulo, nota, id_utilizador) VALUES (%s, %s, %s)"
         values = (titulo, nota, id_utilizador)
         self.cursor.execute(query, values)
         self.conn.commit()
 
-    def guardar_nota(self, novo_titulo, nova_nota):
-        query = "UPDATE notas SET titulo_nota = %s, nota = %s WHERE ID = %s"
-        values = (novo_titulo, nova_nota)
+    def guardar_nota(self, mensagem):
+        username_db = mensagem['username']
+        username = self.encriptar(username_db)
+        values = (username,)
+        query = "SELECT id FROM utilizadores WHERE username = %s"
+        self.cursor.execute(query, values)
+        id_utilizador = self.cursor.fetchone()
+        nota_db = mensagem['notas']
+        nota_id = nota_db[0]
+        nota_titulo = nota_db[1]
+        nota_nota = nota_db[2]
+        titulo = self.encriptar(nota_titulo)
+        nota = self.encriptar(nota_nota)
+        query = "UPDATE notas SET titulo = %s, nota = %s, id_utilizador = %s, WHERE id = %s"
+        values = (titulo, nota, id_utilizador, nota_id)
         self.cursor.execute(query, values)
         self.conn.commit()
 
-    def eliminar_nota(self, nota_id):
-        query = "DELETE FROM notas WHERE ID = %s"
+    def eliminar_nota(self, mensagem):
+        nota_db = mensagem['notas']
+        nota_id = nota_db[0]
+        query = "DELETE FROM notas WHERE id = %s"
         values = (nota_id,)
         self.cursor.execute(query, values)
         self.conn.commit()
 
-    def mostrar_notas(self, id_utilizador):
-        query = "SELECT titulo_nota, nota FROM notas WHERE ID_Utilizador = %s"
+    def mostrar_notas(self,mensagem):
+        username_db = mensagem['username']
+        username = self.encriptar(username_db)
+        values = (username,)
+        query = "SELECT id FROM utilizadores WHERE username = %s"
+        self.cursor.execute(query, values)
+        id_utilizador = self.cursor.fetchone()
+        notas = []
+        query = "SELECT id, titulo, nota FROM nota WHERE id_utilizador = %s"
         values = (id_utilizador,)
         self.cursor.execute(query, values)
-        notas = self.cursor.fetchall()
-        return str(notas)
+        notas_e = self.cursor.fetchall()
+        for i in range (0,len(notas_e),3):
+            notas.append(i) # id
+            notas.append(self.desencriptar(i+1)) # titulo
+            notas.append(self.desencriptar(i+3)) # nota
+        mensagem[notas] = notas
+        return mensagem
 
     def log(self, mensagem):
-        self.prompt_servidor += mensagem + "\n"
+        # Obtém a informação atual, adiciona a nova mensagem e atualiza o ecrã
+        current_log = self.server_log.get()
+        updated_log = current_log + mensagem + "\n"
+        self.server_log.set(updated_log)
 
     def atualizar_text_area(self):
-        self.interface.text_area.delete(1.0, tk.END)
-        self.interface.text_area.insert(tk.END, self.prompt_servidor)
-        self.after(100, self.atualizar_text_area)
+        self.text_area.delete(1.0, tk.END)
+        self.text_area.insert(tk.END, self.server_log)
 
+    def encriptar(self, texto: str) -> str:
+        chave=5
+        return "".join([chr(ord(algo) + chave) for algo in texto])
 
-
+    def desencriptar(self, texto) -> str:
+        chave=5
+        return "".join([chr(ord(algo) - chave) for algo in texto])

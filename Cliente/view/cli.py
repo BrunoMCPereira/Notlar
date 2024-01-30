@@ -6,9 +6,10 @@ from ttkbootstrap.constants import *
 from pathlib import Path
 from ttkbootstrap.toast import ToastNotification
 from controllers.controller import UtilizadorActivo as u
-from models.conexao import ConexaoControlador as c
+from controllers.controller import ConexaoControlador as c
 
 utilizador_ativo = None
+user_ativo = None
 
 PATH = Path(__file__).absolute().parent
 
@@ -129,16 +130,17 @@ class MenuRegisto(ttk.Frame):
         confirmar_senha = self.entry_confirm_password.get()
         if senha == confirmar_senha:
             dados = u()
-            dados.mensagem['servidor'] = 'utilizadores'
-            dados.mensagem['instrucao'] = 'Criar Utilizador'
-            dados.mensagem['Nome'] = f'{self.entry_nome.get()}'
-            dados.mensagem['Username'] = f'{self.entry_username.get()}'
-            dados.mensagem['Password'] = f'{self.entry_password.get()}'
-            dados = dados.dados_mensagem()
-            if (c.tratamento_mensagem(dados) == True):
+            dados.mensagem['instrução'] = 'Criar Utilizador'
+            dados.mensagem['nome'] = f'{self.entry_nome.get()}'
+            dados.mensagem['username'] = f'{self.entry_username.get()}'
+            dados.mensagem['password'] = f'{self.entry_password.get()}'
+            mensagem = str(dados.mensagem)
+            mensagem_c = c.encriptar_cliente(mensagem)
+            conexao = c()
+            if (conexao.tratamento_mensagem(mensagem_c) == True):
                 # Notificação de sucesso
                 toast = ToastNotification(
-                    title="Registo Bem-sucedido",
+                    title="Registo Bem-sucedido", 
                     message="O utilizador foi registado com sucesso!",
                     position=(400, 300, "ne"),
                     duration=5000,
@@ -200,13 +202,16 @@ class MenuValidacao(ttk.Frame):
     def validar(self):
         dados = u()
         dados.mensagem['servidor'] = 'utilizadores'
-        dados.mensagem['instrucao'] = 'Validar_Utilizador'
-        dados.mensagem['Username'] = f'{self.entry_username.get()}'
-        dados.mensagem['Password'] = f'{self.entry_password.get()}'
-        dados = dados.dados_mensagem()
-        if (c.tratamento_mensagem(dados) == True):
+        dados.mensagem['instrucao'] = 'Validar Utilizador'
+        dados.mensagem['username'] = f'{self.entry_username.get()}'
+        dados.mensagem['password'] = f'{self.entry_password.get()}'
+        mensagem = str(dados.dados_mensagem())
+        conexao = c()
+        if (conexao.tratamento_mensagem(mensagem) == True):
             global utilizador_ativo
-            utilizador_ativo = dados.mensagem['Username']
+            global user_ativo
+            utilizador_ativo = dados.mensagem['nome']
+            user_ativo = dados.mensagem['username']
             self.mostrar_toast_sucesso()
             self.controlador.mostrar_pagina(MenuLogin)
         else:
@@ -334,8 +339,18 @@ class MenuNotas(ttk.Frame):
     def __init__(self, controlador):
         super().__init__(controlador.aplicacao)
         self.controlador = controlador
-        
-        notas = ['Amanhã', 'Amanhã vou passear', 'Terça', 'Terça vou passear', 'Quarta', 'Quarta vou passe']
+
+        self.id_notas =[]
+        dados = u()
+        dados.mensagem['instrução'] = 'Mostrar Notas'
+        dados.mensagem['username'] = user_ativo
+        mensagem = str(dados.mensagem)
+        mensagem_c = c.encriptar_cliente(mensagem)
+        conexao = c()
+        dic = conexao.tratamento_mensagem(mensagem_c)
+        notas = dic['notas']
+
+        self.total_n = len(notas)
 
         # Logo e Título da App
         top_frame = ttk.Frame(self)
@@ -355,9 +370,10 @@ class MenuNotas(ttk.Frame):
         self.notebook.grid(row=1, column=0, columnspan=20, sticky="NESW", padx=1, pady=1)
 
         # Itera sobre a lista de notas e adiciona cada par de notas ao Notebook
-        for i in range(0, len(notas), 2):
-            titulo_nota = notas[i]
-            conteudo_nota = notas[i + 1]
+        for i in range(0, len(notas), 3):
+            id_nota = notas[i]
+            titulo_nota = notas[i + 1]
+            conteudo_nota = notas[i + 2]
 
             frame_nota = ttk.Frame(self.notebook)
             self.notebook.add(frame_nota, text=titulo_nota)
@@ -371,7 +387,7 @@ class MenuNotas(ttk.Frame):
             text_nota.insert(tk.END, conteudo_nota)
             text_nota.grid(row=1, column=0,columnspan=50, padx=5, pady=5)
 
-            btn_guardar_nota = ttk.Button(frame_nota, text="Eliminar Nota",style='secondary-outline.TButton', command=lambda t=text_nota, e=entry_titulo: self.guardar_nota(t, e))
+            btn_guardar_nota = ttk.Button(frame_nota, text="Eliminar Nota",style='secondary-outline.TButton', command=lambda i=id_nota : self.eliminar_nota(i))
             btn_guardar_nota.grid(row=2, column=0, pady=1)
             
             btn_nova_nota = ttk.Button(frame_nota, text="Guardar Nota", style='warning-outline.TButton',command=self.adicionar_nova_nota)
@@ -406,6 +422,7 @@ class MenuNotas(ttk.Frame):
         
 
     def adicionar_nova_nota(self):
+        id_nota = self.total_n + 1
         # Cria uma nova aba no notebook para a nova nota
         frame_nova_nota = ttk.Frame(self.notebook)
         self.notebook.add(frame_nova_nota, text="Nova Nota")
@@ -414,29 +431,91 @@ class MenuNotas(ttk.Frame):
         # Adiciona widgets para a nova nota
         entry_titulo_nova_nota = ttk.Entry(frame_nova_nota, font=('Arial', 14, 'bold'), justify='center', width=30)
         entry_titulo_nova_nota.grid(row=0, column=0, columnspan=50, padx=5, pady=5)
+        id_nota = self.id_notas
 
         text_nova_nota = tk.Text(frame_nova_nota, wrap=tk.WORD, height=10, width=125)
         text_nova_nota.grid(row=1, column=0, columnspan=50, padx=5, pady=5)
 
         btn_guardar_nova_nota = ttk.Button(frame_nova_nota, text="Eliminar Nota", style='secondary-outline.TButton',
-                                           command=lambda t=text_nova_nota, e=entry_titulo_nova_nota: self.guardar_nova_nota(t, e))
+                                           command=lambda i=id_nota : self.eliminar_nota(i))
         btn_guardar_nova_nota.grid(row=2, column=0, pady=1)
         
-        btn_nova_nota = ttk.Button(frame_nova_nota, text="Guardar Nota", style='warning-outline.TButton',command=self.adicionar_nova_nota)
+        btn_nova_nota = ttk.Button(frame_nova_nota, text="Guardar Nota", style='warning-outline.TButton',command=lambda i=id_nota, t=text_nova_nota, e=entry_titulo_nova_nota : self.guardar_nova_nota(i,t,e))
         btn_nova_nota.grid(row=2, column=24, sticky='E')
         
-        btn_nova_nota = ttk.Button(frame_nova_nota, text="Criar nova Nota", style='success-outline.TButton',command=self.adicionar_nova_nota)
+        btn_nova_nota = ttk.Button(frame_nova_nota, text="Criar nova Nota", style='success-outline.TButton',command=lambda t=text_nova_nota, e=entry_titulo_nova_nota : self.adicionar_nova_nota(t,e))
         btn_nova_nota.grid(row=2, column=48, sticky='E')
 
-    def guardar_nova_nota(self, text_widget, entry_widget):
+    def guardar_nova_nota(self, id_nota, text_widget, entry_widget):
         # Obtenha o conteúdo e o título da nova nota
         conteudo_nova_nota = text_widget.get("1.0", tk.END)
         titulo_nova_nota = entry_widget.get()
-
-        # Faça o que for necessário com o conteúdo e o título da nova nota
-        print("Título:", titulo_nova_nota)
-        print("Conteúdo:", conteudo_nova_nota)
-
+        id_n = id_nota
+        nota = [id_n,titulo_nova_nota,conteudo_nova_nota]
+        dados = u()
+        dados.mensagem['instrução'] = 'Guardar Nota'
+        dados.mensagem['username'] = user_ativo
+        dados.mensagem['notas'] = nota
+        mensagem = str(dados.mensagem)
+        mensagem_c = c.encriptar_cliente(mensagem)
+        conexao = c()
+        if (conexao.tratamento_mensagem(mensagem_c) == True):
+                # Notificação de sucesso
+                toast = ToastNotification(
+                    title="Nota Guardada", 
+                    message="A nota foi arquivada com sucesso!",
+                    position=(400, 300, "ne"),
+                    duration=5000,
+                bootstyle=SUCCESS
+                )
+                toast.show_toast()
+                self.controlador.mostrar_pagina(MenuNotas)
+        else:
+            # Notificação de erro
+            toast = ToastNotification(
+                title="Erro no processamento",
+                message="Por favor, tente novamente.",
+                position=(400, 300, "ne"),
+                duration=5000,
+                bootstyle=DANGER
+            )
+            toast.show_toast()
+            
+            
+            
+            
+    def eliminar_nota(self, id_nota):
+        # Obtenha o conteúdo e o título da nova nota
+        id_n = id_nota
+        nota = [str(id_n)]
+        dados = u()
+        dados.mensagem['instrução'] = 'Eliminar Nota'
+        dados.mensagem['username'] = user_ativo
+        dados.mensagem['notas'] = nota
+        mensagem = str(dados.mensagem)
+        mensagem_c = c.encriptar_cliente(mensagem)
+        conexao = c()
+        if (conexao.tratamento_mensagem(mensagem_c) == True):
+                # Notificação de sucesso
+                toast = ToastNotification(
+                    title="Nota Eliminada", 
+                    message="A nota foi eliminada com sucesso!",
+                    position=(400, 300, "ne"),
+                    duration=5000,
+                bootstyle=SUCCESS
+                )
+                toast.show_toast()
+                self.controlador.mostrar_pagina(MenuNotas)
+        else:
+            # Notificação de erro
+            toast = ToastNotification(
+                title="Erro no processamento",
+                message="Por favor, tente novamente.",
+                position=(400, 300, "ne"),
+                duration=5000,
+                bootstyle=DANGER
+            )
+            toast.show_toast()
 
 class MenuAlterarUsername(ttk.Frame):
     def __init__(self, controlador):
@@ -482,38 +561,33 @@ class MenuAlterarUsername(ttk.Frame):
     def validar_registo(self):
         senha = self.entry_password.get()
         confirmar_senha = self.entry_confirm_password.get()
-
         if senha == confirmar_senha:
-            mensagem = c.criar_mensagem()
-            mensagem['Servidor'] = 'utilizadores'
-            mensagem['instrução'] = 'Criar_Utilizador'
-            mensagem['Nome'] = f'{self.entry_nome.get()}'
-            mensagem['Username'] = f'{self.entry_username.get()}'
-            mensagem['Password'] = f'{senha}'
-            dados = dados.dados_mensagem()
-            if (c.tratamento_mensagem(dados) == True):
-            # Notificação de sucesso
+            dados = u()
+            dados.mensagem['instrução'] = 'Validar Registo'
+            dados.mensagem['nome'] = f'{self.entry_nome.get()}'
+            dados.mensagem['username'] = f'{self.entry_username.get()}'
+            dados.mensagem['password'] = f'{self.entry_password.get()}'
+            mensagem = str(dados.mensagem)
+            mensagem_c = c.encriptar_cliente(mensagem)
+            conexao = c()
+            if (conexao.tratamento_mensagem(mensagem_c) == True):
+                # Notificação de sucesso
                 toast = ToastNotification(
-                    title="Registo Bem-sucedido",
+                    title="Registo Bem-sucedido", 
                     message="O utilizador foi registado com sucesso!",
                     position=(400, 300, "ne"),
-                    duration=3000,
-                    bootstyle=SUCCESS
+                    duration=5000,
+                bootstyle=SUCCESS
                 )
                 toast.show_toast()
-
-            # Limpar campos
-            self.entry_nome.delete(0, tk.END)
-            self.entry_username.delete(0, tk.END)
-            self.entry_password.delete(0, tk.END)
-            self.entry_confirm_password.delete(0, tk.END)
+                self.controlador.mostrar_pagina(MenuInicial)
         else:
             # Notificação de erro
             toast = ToastNotification(
                 title="Erro no Registo",
                 message="As senhas não coincidem. Por favor, tente novamente.",
                 position=(400, 300, "ne"),
-                duration=3000,
+                duration=5000,
                 bootstyle=DANGER
             )
             toast.show_toast()

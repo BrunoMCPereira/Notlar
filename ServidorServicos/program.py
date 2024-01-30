@@ -1,6 +1,6 @@
-from ServidorServicos.controllers.Servidor import ServidorUtilizadores
+from controllers.Servidor import ServidorServicos
 
 
 if __name__ == "__main__":
-    app = ServidorUtilizadores()
+    app = ServidorServicos()
     app.mainloop()
