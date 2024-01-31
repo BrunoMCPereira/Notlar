@@ -54,7 +54,7 @@ class ControladorPrincipal(tk.Tk):
         self.controlador.bind((MORADA)) #Liga o IP e a Porta ao socket
         
         # Parametrização dos Servidores de Serviços
-        self.ip_servicos = [f"http://{'192.168.1.202'}:{5030}"] # adicionar servidores de serviços: , f"http://{'server_ip'}:{'port'}"
+        self.ip_servicos = [f"http://{'192.168.1.214'}:{5030}"] # adicionar servidores de serviços: , f"http://{'server_ip'}:{'port'}"
         self.ip_actual = 0
         
         # inicia o Servidor do Controlador
