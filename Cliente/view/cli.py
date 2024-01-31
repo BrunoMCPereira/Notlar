@@ -53,7 +53,10 @@ class MenuInicial(ttk.Frame):
     def __init__(self, controlador):
         super().__init__(controlador.aplicacao)
         self.controlador = controlador
-
+        global user_ativo
+        user_ativo = None
+        global utilizador_ativo
+        utilizador_ativo = None
         # Logo
         logo = ttk.PhotoImage(file= PATH /'notebook-64.png')
         logo_label = ttk.Label(self, image=logo)
@@ -234,6 +237,7 @@ class MenuValidacao(ttk.Frame):
             bootstyle=SUCCESS
         )
         toast.show_toast()
+        self.limpar_campos()
         
     def mostrar_toast_erro(self):
         # Notificação de Erro
@@ -246,6 +250,7 @@ class MenuValidacao(ttk.Frame):
             bootstyle=WARNING
         )
         toast.show_toast()
+        self.limpar_campos()
 
     def limpar_campos(self):
         self.entry_username.delete(0, tk.END)
@@ -347,7 +352,10 @@ class MenuNotas(ttk.Frame):
         super().__init__(controlador.aplicacao)
         self.controlador = controlador
         
-        notas = ['Amanhã', 'Amanhã vou passear', 'Terça', 'Terça vou passear', 'Quarta', 'Quarta vou passe']
+        self.notas = ['Edite titulo','Edite nota']
+        
+        self.obter_notas()
+
         # Logo e Título da App
         top_frame = ttk.Frame(self)
         top_frame.grid(row=0, column=0, columnspan=2, sticky="NW")
@@ -357,14 +365,14 @@ class MenuNotas(ttk.Frame):
         logo_label.grid(row=0, column=0, sticky="w", padx=10, pady=10)
         titulo_label = ttk.Label(top_frame, text="Notlar", font=('Bradley Hand ITC', 36, 'bold'))
         titulo_label.grid(row=0, column=1, sticky="w", padx=10, pady=10)
-        #Criação do notebook tem de ir para 
+        #Criação do notebook tem de ir para
         # Criação do Notebook
         self.notebook = ttk.Notebook(self)
         self.notebook.grid(row=1, column=0, columnspan=20, sticky="NESW", padx=1, pady=1)
         # Itera sobre a lista de notas e adiciona cada par de notas ao Notebook
-        for i in range(0, len(notas), 2):
-            titulo_nota = notas[i]
-            conteudo_nota = notas[i + 1]
+        for i in range(0, len(self.notas), 2):
+            titulo_nota = self.notas[i]
+            conteudo_nota = self.notas[i + 1]
             frame_nota = ttk.Frame(self.notebook)
             self.notebook.add(frame_nota, text=titulo_nota)
             # Adicione widgets para exibir a nota dentro do frame_nota
@@ -377,7 +385,7 @@ class MenuNotas(ttk.Frame):
             btn_guardar_nota = ttk.Button(frame_nota, text="Eliminar Nota",style='secondary-outline.TButton', command=lambda t=text_nota, e=entry_titulo: self.guardar_nota(t, e))
             btn_guardar_nota.grid(row=2, column=0, pady=1)
             
-            btn_nova_nota = ttk.Button(frame_nota, text="Guardar Nota", style='warning-outline.TButton',command=self.adicionar_nova_nota)
+            btn_nova_nota = ttk.Button(frame_nota, text="Guardar Nota", style='warning-outline.TButton',command=lambda t=text_nota, e=entry_titulo: self.guardar_nova_nota(t, e))
             btn_nova_nota.grid(row=2, column=24, sticky='E')
             # Botão para adicionar nova nota
             
@@ -391,7 +399,7 @@ class MenuNotas(ttk.Frame):
         
         btn_voltar = ttk.Button(buttonsr_frame, text="Voltar ao Menu Anterior", style='light-outline.TButton',command=lambda: self.controlador.mostrar_pagina(MenuLogin))
         btn_voltar.pack(side='left', padx=10, pady=30)
-        btn_voltar = ttk.Button(buttonsr_frame, text="Sign out", style='danger-outline.TButton',command=lambda: self.controlador.mostrar_pagina(MenuInicial))
+        btn_voltar = ttk.Button(buttonsr_frame, text="Sign out", style='danger-outline.TButton', command=lambda: [self.limpar_notebook(), self.controlador.mostrar_pagina(MenuInicial)])
         btn_voltar.pack(side='left', padx=10)
         btn_sair = ttk.Button(buttonsr_frame, text="Sair", style='secondary-outline.TButton',command=self.controlador.aplicacao.destroy)
         btn_sair.pack(side='left', padx=10)
@@ -412,14 +420,15 @@ class MenuNotas(ttk.Frame):
         text_nova_nota = tk.Text(frame_nova_nota, wrap=tk.WORD, height=10, width=125)
         text_nova_nota.grid(row=1, column=0, columnspan=50, padx=5, pady=5)
         btn_guardar_nova_nota = ttk.Button(frame_nova_nota, text="Eliminar Nota", style='secondary-outline.TButton',
-                                           command=lambda t=text_nova_nota, e=entry_titulo_nova_nota: self.guardar_nova_nota(t, e))
+                                           command=lambda t=text_nova_nota, e=entry_titulo_nova_nota: self.eliminar_nota(t, e))
         btn_guardar_nova_nota.grid(row=2, column=0, pady=1)
         
-        btn_nova_nota = ttk.Button(frame_nova_nota, text="Guardar Nota", style='warning-outline.TButton',command=self.guardar_nova_nota)
+        btn_nova_nota = ttk.Button(frame_nova_nota, text="Guardar Nota", style='warning-outline.TButton',command=lambda t=text_nova_nota, e=entry_titulo_nova_nota: self.guardar_nova_nota(t, e))
         btn_nova_nota.grid(row=2, column=24, sticky='E')
         
-        btn_nova_nota = ttk.Button(frame_nova_nota, text="Criar nova Nota", style='success-outline.TButton',command=self.guardar_nova_nota)
+        btn_nova_nota = ttk.Button(frame_nova_nota, text="Criar nova Nota", style='success-outline.TButton',command=self.adicionar_nova_nota)
         btn_nova_nota.grid(row=2, column=48, sticky='E')
+        
     def guardar_nova_nota(self, text_widget, entry_widget):
         # Obtenha o conteúdo e o título da nova nota
         conteudo_nova_nota = text_widget.get("1.0", tk.END)
@@ -447,18 +456,17 @@ class MenuNotas(ttk.Frame):
         else:
             # Notificação de erro
             toast = ToastNotification(
-                title="Erro no processamento",
-                message="Por favor, tente novamente.",
+                title="Nota Guardada",
+                message="A nota foi arquivada com sucesso!",
                 position=(400, 300, "ne"),
                 duration=5000,
-                bootstyle=DANGER
-            )
+                bootstyle=SUCCESS
+                )
             toast.show_toast()
+            self.controlador.mostrar_pagina(MenuNotas)
 
-    def eliminar_nota(self, id_nota):
+    def eliminar_nota(self,nota):
         # Obtenha o conteúdo e o título da nova nota
-        id_n = id_nota
-        nota = [str(id_n)]
         sessao.mensagem['instrução'] = 'Eliminar Nota'
         sessao.mensagem['notas'] = nota
         mensagem = str(sessao.mensagem)
@@ -475,7 +483,7 @@ class MenuNotas(ttk.Frame):
                 bootstyle=SUCCESS
                 )
                 toast.show_toast()
-                self.controlador.mostrar_pagina(MenuNotas)
+
         else:
             # Notificação de erro
             toast = ToastNotification(
@@ -485,7 +493,26 @@ class MenuNotas(ttk.Frame):
                 duration=5000,
                 bootstyle=DANGER
             )
-            toast.show_toast()
+
+            
+    def obter_notas(self):
+        sessao.mensagem['instrução'] = 'Mostrar Notas'
+        sessao.mensagem['username'] = user_ativo
+        mensagem = str(sessao.mensagem)
+        mensagem_c = c.encriptar_cliente(mensagem)
+        conexao = c()
+        dic = conexao.tratamento_mensagem(mensagem_c)
+        print(dic)
+        notas = dic['notas']
+        if notas is not None:
+            self.notas.extend(notas)
+        else:
+            pass
+
+    def limpar_notebook(self):
+        for i in range(self.notebook.index("end") - 1, -1, -1):
+            self.notebook.forget(i)
+        
 
 class MenuAlterarUsername(ttk.Frame):
     def __init__(self, controlador):

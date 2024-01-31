@@ -90,7 +90,7 @@ class ServidorServicos(tk.Tk):
         mensagem: str = mensagem_encriptada.decode("utf-8")
         mensagem_d: str = self.desencriptar(mensagem)
         mensagem : dict = ast.literal_eval(mensagem_d)
-        print(mensagem)
+
         instrucao = mensagem['instrução']
         if instrucao == 'Criar Utilizador':
             self.log(f'Solicitado criação de utilizador')
@@ -221,15 +221,15 @@ class ServidorServicos(tk.Tk):
     def criar_nota(self, mensagem):
         username_db = mensagem['username']
         username = self.encriptar(str(username_db))
-
         values = (username,)
         query = "SELECT id FROM utilizador WHERE username = %s"
         self.cursor.execute(query, values)
         id_utilizador = self.cursor.fetchone()
+        print(id_utilizador)
         id_utilizador = id_utilizador[0]
         notas_db = mensagem['notas']
-        titulo_db = notas_db[1]
-        nota_db = notas_db[2]
+        titulo_db = notas_db[0]
+        nota_db = notas_db[1]
         titulo = self.encriptar(titulo_db)
         nota = self.encriptar(nota_db)
         query = "INSERT INTO nota (titulo, nota, id_utilizador) VALUES (%s, %s, %s)"
@@ -267,23 +267,35 @@ class ServidorServicos(tk.Tk):
 
     def mostrar_notas(self,mensagem):
         username_db = mensagem['username']
-        username = self.encriptar(username_db)
-        values = (username,)
-        query = "SELECT id FROM utilizador WHERE username = %s"
-        self.cursor.execute(query, values)
-        id_utilizador = self.cursor.fetchone()
-        notas = []
-        query = "SELECT id, titulo, nota FROM nota WHERE id_utilizador = %s"
-        values = (id_utilizador,)
-        self.cursor.execute(query, values)
-        notas_e = self.cursor.fetchall()
-        for i in range (0,len(notas_e),3):
-            notas.append(i) # id
-            notas.append(self.desencriptar(i+1)) # titulo
-            notas.append(self.desencriptar(i+3)) # nota
-        mensagem['notas'] = notas
-        self.log(f'Notas disponibilizadas')
-        return mensagem
+        if username_db is None:
+            mensagem['notas'] = None
+            self.log(f'Sem Notas para disponibilizar')
+            return mensagem
+        else:
+            username = self.encriptar(username_db)
+            values = (username,)
+            query = "SELECT id FROM utilizador WHERE username = %s"
+            self.cursor.execute(query, values)
+            res = self.cursor.fetchone()
+            id_utilizador = res[0]
+            notas = []
+            query = "SELECT titulo, nota FROM nota WHERE id_utilizador = %s"
+            values = (id_utilizador,)
+            self.cursor.execute(query, values)
+            notas_e = self.cursor.fetchall()[0]
+            print (notas_e)
+            for i in range (0,len(notas_e),2):
+                titulo_e: str =notas_e[i] # titulo
+                print (titulo_e)
+                print (type(titulo_e))
+                titulo = self.desencriptar(titulo_e)
+                nota_e: str = notas_e[i+1]
+                nota = self.desencriptar(nota_e)
+                notas.append(titulo)
+                notas.append(nota) #
+            mensagem['notas'] = notas
+            self.log(f'Notas disponibilizadas')
+            return mensagem
 
     def log(self, mensagem):
         # Obtém a informação atual, adiciona a nova mensagem e atualiza o ecrã
