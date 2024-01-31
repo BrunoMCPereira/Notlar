@@ -415,17 +415,16 @@ class MenuNotas(ttk.Frame):
                                            command=lambda t=text_nova_nota, e=entry_titulo_nova_nota: self.guardar_nova_nota(t, e))
         btn_guardar_nova_nota.grid(row=2, column=0, pady=1)
         
-        btn_nova_nota = ttk.Button(frame_nova_nota, text="Guardar Nota", style='warning-outline.TButton',command=self.adicionar_nova_nota)
+        btn_nova_nota = ttk.Button(frame_nova_nota, text="Guardar Nota", style='warning-outline.TButton',command=self.guardar_nova_nota)
         btn_nova_nota.grid(row=2, column=24, sticky='E')
         
-        btn_nova_nota = ttk.Button(frame_nova_nota, text="Criar nova Nota", style='success-outline.TButton',command=self.adicionar_nova_nota)
+        btn_nova_nota = ttk.Button(frame_nova_nota, text="Criar nova Nota", style='success-outline.TButton',command=self.guardar_nova_nota)
         btn_nova_nota.grid(row=2, column=48, sticky='E')
-    def guardar_nova_nota(self, id_nota, text_widget, entry_widget):
+    def guardar_nova_nota(self, text_widget, entry_widget):
         # Obtenha o conteúdo e o título da nova nota
         conteudo_nova_nota = text_widget.get("1.0", tk.END)
         titulo_nova_nota = entry_widget.get()
-        id_n = id_nota
-        nota = [id_n,titulo_nova_nota,conteudo_nova_nota]
+        nota = [titulo_nova_nota,conteudo_nova_nota]
         sessao.mensagem['instrução'] = 'Criar Nota'
         print(user_ativo)
         sessao.mensagem['username'] = user_ativo

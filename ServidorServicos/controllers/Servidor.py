@@ -246,7 +246,6 @@ class ServidorServicos(tk.Tk):
         self.cursor.execute(query, values)
         id_utilizador = self.cursor.fetchone()
         nota_db = mensagem['notas']
-        nota_id = nota_db[0]
         nota_titulo = nota_db[1]
         nota_nota = nota_db[2]
         titulo = self.encriptar(nota_titulo)
