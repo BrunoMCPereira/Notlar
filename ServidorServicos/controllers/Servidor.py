@@ -268,7 +268,7 @@ class ServidorServicos(tk.Tk):
     def mostrar_notas(self,mensagem):
         username_db = mensagem['username']
         if username_db is None:
-            mensagem['notas'] = None
+            mensagem['notas'] = ['Edite titulo','Edite Nota']
             self.log(f'Sem Notas para disponibilizar')
             return mensagem
         else:
@@ -282,20 +282,26 @@ class ServidorServicos(tk.Tk):
             query = "SELECT titulo, nota FROM nota WHERE id_utilizador = %s"
             values = (id_utilizador,)
             self.cursor.execute(query, values)
-            notas_e = self.cursor.fetchall()[0]
-            print (notas_e)
-            for i in range (0,len(notas_e),2):
-                titulo_e: str =notas_e[i] # titulo
-                print (titulo_e)
-                print (type(titulo_e))
-                titulo = self.desencriptar(titulo_e)
-                nota_e: str = notas_e[i+1]
-                nota = self.desencriptar(nota_e)
-                notas.append(titulo)
-                notas.append(nota) #
-            mensagem['notas'] = notas
-            self.log(f'Notas disponibilizadas')
-            return mensagem
+            notas_e = self.cursor.fetchall()
+            if len(notas_e) == 0:
+                mensagem['notas'] = ['Edite titulo','Edite Nota']
+                self.log(f'Sem Notas para disponibilizar')
+                return mensagem
+            else:
+                for i in range (0,len(notas_e),2):
+                    dupla: str = notas_e[i] #nota
+                    titulo_e = dupla[0]
+                    print(titulo_e)
+                    nota_e = dupla[1]
+                    print (nota_e)
+                    print (type(titulo_e))
+                    titulo = self.desencriptar(titulo_e)
+                    nota = self.desencriptar(nota_e)
+                    notas.append(titulo)
+                    notas.append(nota) #
+                mensagem['notas'] = notas
+                self.log(f'Notas disponibilizadas')
+                return mensagem
 
     def log(self, mensagem):
         # Obtém a informação atual, adiciona a nova mensagem e atualiza o ecrã

@@ -138,7 +138,6 @@ class MenuRegisto(ttk.Frame):
             sessao.mensagem['username'] = f'{self.entry_username.get()}'
             sessao.mensagem['password'] = f'{self.entry_password.get()}'
             mensagem = str(sessao.mensagem)
-            print(mensagem)
             mensagem_c = c.encriptar_cliente(mensagem)
             conexao = c()
             val = bool(conexao.tratamento_mensagem(mensagem_c))
@@ -435,7 +434,6 @@ class MenuNotas(ttk.Frame):
         titulo_nova_nota = entry_widget.get()
         nota = [titulo_nova_nota,conteudo_nova_nota]
         sessao.mensagem['instrução'] = 'Criar Nota'
-        print(user_ativo)
         sessao.mensagem['username'] = user_ativo
         sessao.mensagem['notas'] = nota
         mensagem = str(sessao.mensagem)
@@ -502,12 +500,10 @@ class MenuNotas(ttk.Frame):
         mensagem_c = c.encriptar_cliente(mensagem)
         conexao = c()
         dic = conexao.tratamento_mensagem(mensagem_c)
-        print(dic)
-        notas = dic['notas']
-        if notas is not None:
-            self.notas.extend(notas)
-        else:
-            pass
+        self.notas = dic['notas']
+
+
+
 
     def limpar_notebook(self):
         for i in range(self.notebook.index("end") - 1, -1, -1):
