@@ -221,6 +221,7 @@ class ServidorServicos(tk.Tk):
     def criar_nota(self, mensagem):
         username_db = mensagem['username']
         username = self.encriptar(str(username_db))
+
         values = (username,)
         query = "SELECT id FROM utilizador WHERE username = %s"
         self.cursor.execute(query, values)
