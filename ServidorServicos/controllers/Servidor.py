@@ -90,12 +90,12 @@ class ServidorServicos(tk.Tk):
         mensagem: str = mensagem_encriptada.decode("utf-8")
         mensagem_d: str = self.desencriptar(mensagem)
         mensagem : dict = ast.literal_eval(mensagem_d)
+        print(mensagem)
         instrucao = mensagem['instrução']
         if instrucao == 'Criar Utilizador':
             self.log(f'Solicitado criação de utilizador')
             resposta = self.criar_utilizador(mensagem)
             resposta_encriptada = self.encriptar(str(resposta))
-
             conexao.send(resposta_encriptada.encode(FORMATO))
             self.log(f'RESPOSTA ENVIADA a Controlador Principal ')
         elif instrucao == 'Alterar Password':
@@ -142,13 +142,12 @@ class ServidorServicos(tk.Tk):
             self.log(f'RESPOSTA ENVIADA a Controlador Principal')
         elif instrucao == 'Mostrar Notas':
             self.log(f'Solicitada a disponibilização de notas')
-            resposta : dict = self.mostrar_notas(mensagem)
-            self.log(f'{resposta}')
+            resposta= self.mostrar_notas(mensagem)
             mensagem = str(resposta)
             mensagem_enc = self.encriptar(mensagem)
             mennsagem_cod = mensagem_enc.encode(FORMATO)
             conexao.send(mennsagem_cod)
-            self.log(f'\nRESPOSTA ENVIADA a Controlador Principal \n')
+            self.log(f'RESPOSTA ENVIADA a Controlador Principal')
 
     def criar_utilizador(self, mensagem) -> bool:
         nome_db = mensagem['nome']
@@ -183,7 +182,6 @@ class ServidorServicos(tk.Tk):
         
     def alterar_username(self, mensagem) -> bool:
         valida = bool(self.validar_utilizador(mensagem))
-        self.log(f'{valida}')
         if (valida == True):
             username_db = mensagem['username']
             username = self.encriptar(username_db)
@@ -222,17 +220,18 @@ class ServidorServicos(tk.Tk):
 
     def criar_nota(self, mensagem):
         username_db = mensagem['username']
-        username = self.encriptar(username_db)
+        username = self.encriptar(str(username_db))
         values = (username,)
-        query = "SELECT id FROM utilizadores WHERE username = %s"
+        query = "SELECT id FROM utilizador WHERE username = %s"
         self.cursor.execute(query, values)
         id_utilizador = self.cursor.fetchone()
+        id_utilizador = id_utilizador[0]
         notas_db = mensagem['notas']
         titulo_db = notas_db[1]
         nota_db = notas_db[2]
         titulo = self.encriptar(titulo_db)
         nota = self.encriptar(nota_db)
-        query = "INSERT INTO notas (titulo, nota, id_utilizador) VALUES (%s, %s, %s)"
+        query = "INSERT INTO nota (titulo, nota, id_utilizador) VALUES (%s, %s, %s)"
         values = (titulo, nota, id_utilizador)
         self.cursor.execute(query, values)
         self.conn.commit()
@@ -242,7 +241,7 @@ class ServidorServicos(tk.Tk):
         username_db = mensagem['username']
         username = self.encriptar(username_db)
         values = (username,)
-        query = "SELECT id FROM utilizadores WHERE username = %s"
+        query = "SELECT id FROM utilizador WHERE username = %s"
         self.cursor.execute(query, values)
         id_utilizador = self.cursor.fetchone()
         nota_db = mensagem['notas']
@@ -251,8 +250,8 @@ class ServidorServicos(tk.Tk):
         nota_nota = nota_db[2]
         titulo = self.encriptar(nota_titulo)
         nota = self.encriptar(nota_nota)
-        query = "UPDATE notas SET titulo = %s, nota = %s, id_utilizador = %s, WHERE id = %s"
-        values = (titulo, nota, id_utilizador, nota_id)
+        query = "UPDATE nota SET titulo = %s, nota = %s, id_utilizador = %s"
+        values = (titulo, nota, id_utilizador)
         self.cursor.execute(query, values)
         self.conn.commit()
         self.log(f'Nota Guardada')
@@ -260,7 +259,7 @@ class ServidorServicos(tk.Tk):
     def eliminar_nota(self, mensagem):
         nota_db = mensagem['notas']
         nota_id = nota_db[0]
-        query = "DELETE FROM notas WHERE id = %s"
+        query = "DELETE FROM nota WHERE id = %s"
         values = (nota_id,)
         self.cursor.execute(query, values)
         self.conn.commit()
@@ -270,7 +269,7 @@ class ServidorServicos(tk.Tk):
         username_db = mensagem['username']
         username = self.encriptar(username_db)
         values = (username,)
-        query = "SELECT id FROM utilizadores WHERE username = %s"
+        query = "SELECT id FROM utilizador WHERE username = %s"
         self.cursor.execute(query, values)
         id_utilizador = self.cursor.fetchone()
         notas = []
