@@ -130,9 +130,9 @@ class ControladorPrincipal(tk.Tk):
     def desencriptar_cliente(texto: str) -> str:
         chave = 5
         return "".join([chr(ord(algo) - chave) for algo in texto])
+   
+
     """ Balanceador de carga usando o algoritmo Round Robin. """
-
-
     def prox_serv(self):
         # Retorna o próximo servidor na lista.
         serv_dest = self.ip_servicos[self.ip_actual]
