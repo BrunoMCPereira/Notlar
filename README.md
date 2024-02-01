@@ -1,2 +1,0 @@
-# Notlar
-Projeto_SDP
