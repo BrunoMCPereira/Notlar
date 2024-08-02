@@ -1,0 +1,1 @@
+Este projecto envolve o desenvolvimento de um sistema de chat em tempo real, distribuído, que permite a comunicação entre vários utilizadores em simultâneo. Utilizando conceitos como gestão de clusters com Apache ZooKeeper e armazenamento de dados com MongoDB.
